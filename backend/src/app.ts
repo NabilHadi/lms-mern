@@ -3,6 +3,7 @@ import "dotenv/config";
 import express, { NextFunction, Request, Response } from "express";
 import courseRouter from "./routes/courses";
 import morgan from "morgan";
+import createHttpError, { isHttpError } from "http-errors";
 
 const app = express();
 
@@ -12,17 +13,19 @@ app.use(express.json());
 app.use("/api/courses", courseRouter);
 
 app.use((req, res, next) => {
-  next(Error("Endpoint not found"));
+  next(createHttpError(404, "Endpoint Not found"));
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error(error);
   let errorMessage = "An unknown error occurred.";
-  if (error instanceof Error) {
+  let statusCode = 500;
+  if (isHttpError(error)) {
     errorMessage = error.message;
+    statusCode = error.status;
   }
-  res.status(500).json({ message: errorMessage });
+  res.status(statusCode).json({ error: errorMessage });
 });
 
 export default app;
